@@ -1,0 +1,48 @@
+image: docker:latest
+
+services:
+  - docker:dind
+
+variables:
+  DOCKER_DRIVER: overlay2
+
+before_script:
+  # Login to GitLab Container Registry
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+  # Install curl in the GitLab runner environment
+  - apk add --no-cache curl
+
+stages:          # List of stages for jobs, and their order of execution
+  - build
+  - test
+  - deploy
+
+build-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  script:
+    - docker build -t flask-app .
+    - docker tag flask-app $CI_REGISTRY_IMAGE:latest  # Tag the image with the full registry path
+    - docker push $CI_REGISTRY_IMAGE:latest           # Push the image to the GitLab Container Registry
+
+unit-test-job:
+  stage: test
+  script:
+    - docker pull $CI_REGISTRY_IMAGE:latest
+    - docker run -itd --network="host" --name flask_app -v $CI_PROJECT_DIR:/app $CI_REGISTRY_IMAGE:latest
+    - sleep 20
+    - docker ps
+    - docker ps -a
+    - docker exec flask_app /app/tests/test_app.sh
+
+lint-test-job:   # This job also runs in the test stage.
+  stage: test    # It can run at the same time as unit-test-job (in parallel).
+  script:
+    - echo "Linting code... This will take about 10 seconds."
+    - sleep 10
+    - echo "No lint issues found."
+
+deploy-job:      # This job runs in the deploy stage.
+  stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
+  environment: production
+  script:
+    - echo "Application successfully deployed."
