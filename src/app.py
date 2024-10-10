@@ -11,7 +11,7 @@ counter = {
     '/stats':0
 }
 
-@app.route('/square_odds', methods=['GET'])
+@app.route('/square_odds', methods=['POST'])
 def square_odds():
     data = request.json
     numbers = data['numbers']
@@ -28,7 +28,7 @@ def square_odds():
 
     return jsonify({'square_odds': squared_odds}), 200
 
-@app.route('/sum', methods=['GET', 'POST'])
+@app.route('/sum', methods=['POST'])
 def sum_numbers():
     data = request.json
 
@@ -51,4 +51,4 @@ def index():
 # TODO: add a route `/stats` that returns the number of times each routes have been called since the program started up.
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=1000)
+    app.run(host='0.0.0.0', port=5000)
